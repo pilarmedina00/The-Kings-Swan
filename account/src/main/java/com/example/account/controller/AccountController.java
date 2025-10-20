@@ -94,4 +94,12 @@ public class AccountController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
+
+    @GetMapping("secure")
+    public ResponseEntity<?> secure(java.security.Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("unauthorized");
+        }
+        return ResponseEntity.ok("hello " + principal.getName());
+    }
 }

@@ -1,5 +1,6 @@
 package com.example.account.util;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -37,6 +38,8 @@ public class JwtUtil {
 
     public String generateToken(String subject, Map<String, Object> claims) {
     ensureKeyInitialized();
+    // if expirationSeconds not set or non-positive, default to 3600 seconds for tests/dev
+    if (this.expirationSeconds <= 0) this.expirationSeconds = 3600;
     long now = System.currentTimeMillis();
         Date issuedAt = new Date(now);
         Date expiry = new Date(now + expirationSeconds * 1000);
@@ -48,5 +51,25 @@ public class JwtUtil {
                 .setExpiration(expiry)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public Claims getClaims(String token) {
+        ensureKeyInitialized();
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    public boolean validateToken(String token) {
+        if (token == null) return false;
+        try {
+            Claims claims = getClaims(token);
+            Date exp = claims.getExpiration();
+            return exp != null && exp.after(new Date());
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
