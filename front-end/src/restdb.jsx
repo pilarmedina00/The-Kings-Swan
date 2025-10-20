@@ -1,7 +1,11 @@
-// servers must allow CORS requests for these urls to work
-const custBaseURL = 'http://localhost:4000/api/customers';
-const authBaseUrl = 'http://localhost:8081/account';
+// Use relative paths so Vite dev server proxy (vite.config.js) will forward to
+// the backend services in development. This also makes the app work in prod
+// behind a reverse proxy.
+const custBaseURL = '/api/customers';
+const authBaseUrl = '/account';
 
+// Stored JWT token for requests to the Data Service. This is updated when
+// the user logs in successfully.
 let token = null;
 
 
@@ -172,6 +176,8 @@ export async function getJWTToken(username, password) {
   }
   // Expect JSON { token: ... }
   const data = await response.json();
+  // store the token for future requests
+  token = data.token;
   return { status: "success", message: "Login successful", token: data.token };
 }
 

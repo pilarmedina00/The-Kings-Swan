@@ -3,6 +3,9 @@ package com.example.data.controller;
 
 import com.example.data.model.Customer;
 import com.example.data.repository.CustomerRepository;
+import com.example.data.dto.RegisterRequest;
+import com.example.data.dto.CustomerDto;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.net.URI;
 import java.util.List;
@@ -37,6 +40,12 @@ public class CustomerController {
     @GetMapping
     public List<Customer> getAll() { return repo.findAll(); }
 
+    // Support lookup by email: GET /customers?email=someone@example.com
+    @GetMapping(params = "email")
+    public ResponseEntity<Customer> getByEmail(@org.springframework.web.bind.annotation.RequestParam String email) {
+        return repo.findByEmail(email).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Customer> getOne(@PathVariable Long id) {
         return repo.findById(id).map(ResponseEntity::ok)
@@ -44,14 +53,32 @@ public class CustomerController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Customer c) {
-        Optional<Customer> existing = repo.findByEmail(c.getEmail());
+    public ResponseEntity<?> create(@RequestBody RegisterRequest req) {
+        Optional<Customer> existing = repo.findByEmail(req.getEmail());
         if (existing.isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("{\"error\":\"EMAIL_TAKEN\",\"message\":\"Email already exists\"}");
         }
+
+        // Hash the incoming plaintext password before storing
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        String hash = encoder.encode(req.getPassword());
+
+        Customer c = new Customer();
+        c.setName(req.getName());
+        c.setEmail(req.getEmail());
+        c.setPasswordHash(hash);
+
         Customer saved = repo.save(c);
-        return ResponseEntity.created(URI.create("/api/customers/" + saved.getId())).body(saved);
+
+        // Return a DTO suitable for the Account service
+        CustomerDto dto = new CustomerDto();
+        dto.setId(saved.getId());
+        dto.setName(saved.getName());
+        dto.setEmail(saved.getEmail());
+        dto.setPasswordHash(saved.getPasswordHash());
+
+        return ResponseEntity.created(URI.create("/api/customers/" + saved.getId())).body(dto);
     }
 
     @PutMapping("/{id}")

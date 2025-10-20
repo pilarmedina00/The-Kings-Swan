@@ -4,7 +4,8 @@ public class CustomerDto {
     private Long id;
     private String name;
     private String email;
-    private String password;
+    // store/transfer the password hash (not the plaintext password)
+    private String passwordHash;
 
     public CustomerDto() {}
 
@@ -32,11 +33,11 @@ public class CustomerDto {
         this.email = email;
     }
 
-    public String getPassword() {
-        return password;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 }
